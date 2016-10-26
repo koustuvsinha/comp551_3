@@ -1,0 +1,8 @@
+*.gz
+*.bin
+*.csv
+*.zip
+*.json
+*.ipynb
+*.npz
+secrets.py
