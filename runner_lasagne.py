@@ -129,12 +129,12 @@ def build_cnn(input_var=None, param_values=None):
             W=lasagne.init.GlorotUniform())
 
     lconv2 = lasagne.layers.Conv2DLayer(
-            lconv1, num_filters=32, filter_size=(5, 5),
+            lconv1, num_filters=32, filter_size=(5, 5),pad=2,
             nonlinearity=lasagne.nonlinearities.rectify)
     #lpool2 = lasagne.layers.MaxPool2DLayer(lconv2, pool_size=(2, 2))
 
     lconv3 = lasagne.layers.Conv2DLayer(
-            lconv2, num_filters=32, filter_size=(5, 5),stride=2,
+            lconv2, num_filters=32, filter_size=(5, 5),pad=2,stride=2,
             nonlinearity=lasagne.nonlinearities.rectify)
 
     if param_values:
@@ -142,16 +142,15 @@ def build_cnn(input_var=None, param_values=None):
 
     lconv4 = lasagne.layers.Conv2DLayer(
             lconv3, num_filters=32, filter_size=(5, 5),
-            nonlinearity=lasagne.nonlinearities.rectify,
-            W=lasagne.init.GlorotUniform())
+            nonlinearity=lasagne.nonlinearities.rectify)
 
     lconv5 = lasagne.layers.Conv2DLayer(
-            lconv4, num_filters=32, filter_size=(5, 5),
+            lconv4, num_filters=32, filter_size=(5, 5),pad=2,
             nonlinearity=lasagne.nonlinearities.rectify)
     #lpool2 = lasagne.layers.MaxPool2DLayer(lconv2, pool_size=(2, 2))
 
     lconv6 = lasagne.layers.Conv2DLayer(
-            lconv5, num_filters=32, filter_size=(5, 5),stride=2,
+            lconv5, num_filters=32, filter_size=(5, 5),pad=2,stride=2,
             nonlinearity=lasagne.nonlinearities.rectify)
 
     #lconv4 = lasagne.layers.Conv2DLayer(
