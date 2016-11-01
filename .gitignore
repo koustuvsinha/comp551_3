@@ -6,3 +6,4 @@
 *.ipynb
 *.npz
 secrets.py
+.idea
