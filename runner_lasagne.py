@@ -30,6 +30,7 @@ import traceback
 import scipy.io
 import csv
 import argparse
+from lasagne.regularization import regularize_layer_params_weighted, l2
 
 # Ignore if not using slack
 slackClient = Slacker(slack)
@@ -128,19 +129,36 @@ def build_cnn(input_var=None, param_values=None):
             W=lasagne.init.GlorotUniform())
 
     lconv2 = lasagne.layers.Conv2DLayer(
-            lconv1, num_filters=32, filter_size=(5, 5),
+            lconv1, num_filters=32, filter_size=(5, 5),pad=2,
             nonlinearity=lasagne.nonlinearities.rectify)
     #lpool2 = lasagne.layers.MaxPool2DLayer(lconv2, pool_size=(2, 2))
 
     lconv3 = lasagne.layers.Conv2DLayer(
-            lconv2, num_filters=32, filter_size=(5, 5),stride=2,
+            lconv2, num_filters=32, filter_size=(5, 5),pad=2,stride=2,
             nonlinearity=lasagne.nonlinearities.rectify)
 
     if param_values:
         lasagne.layers.set_all_param_values(lconv3,param_values)
 
+    lconv4 = lasagne.layers.Conv2DLayer(
+            lconv3, num_filters=32, filter_size=(5, 5),
+            nonlinearity=lasagne.nonlinearities.rectify)
+
+    lconv5 = lasagne.layers.Conv2DLayer(
+            lconv4, num_filters=32, filter_size=(5, 5),pad=2,
+            nonlinearity=lasagne.nonlinearities.rectify)
+    #lpool2 = lasagne.layers.MaxPool2DLayer(lconv2, pool_size=(2, 2))
+
+    lconv6 = lasagne.layers.Conv2DLayer(
+            lconv5, num_filters=32, filter_size=(5, 5),pad=2,stride=2,
+            nonlinearity=lasagne.nonlinearities.rectify)
+
+    #lconv4 = lasagne.layers.Conv2DLayer(
+    #        lconv2, num_filters=32, filter_size=(5, 5),stride=2,
+    #        nonlinearity=lasagne.nonlinearities.rectify)
+
     l_hidden1 = lasagne.layers.DenseLayer(
-            lasagne.layers.dropout(lconv3, p=.5),
+            lasagne.layers.dropout(lconv6, p=.5),
             num_units=256,
             nonlinearity=lasagne.nonlinearities.rectify)
 
@@ -174,13 +192,14 @@ def train(network,label='train',input_var=None,target_var=None,X_train=None,X_va
     loss = lasagne.objectives.categorical_crossentropy(prediction, target_var)
     loss = loss.mean()
     # We could add some weight decay as well here, see lasagne.regularization.
-
+    #l2_penalty = regularize_layer_params_weighted(network, l2)
+    #loss = loss + l2_penalty
     # Create update expressions for training, i.e., how to modify the
     # parameters at each training step. Here, we'll use Stochastic Gradient
     # Descent (SGD) with Nesterov momentum, but Lasagne offers plenty more.
     params = lasagne.layers.get_all_params(network, trainable=True)
     updates = lasagne.updates.nesterov_momentum(
-            loss, params, learning_rate=0.01, momentum=0.9)
+            loss, params, learning_rate=0.002, momentum=0.9)
 
     # Create a loss expression for validation/testing. The crucial difference
     # here is that we do a deterministic forward pass through the network,
@@ -188,7 +207,7 @@ def train(network,label='train',input_var=None,target_var=None,X_train=None,X_va
     test_prediction = lasagne.layers.get_output(network, deterministic=True)
     test_loss = lasagne.objectives.categorical_crossentropy(test_prediction,
                                                             target_var)
-    test_loss = test_loss.mean()
+    test_loss = test_loss.mean()# + l2_penalty
     # As a bonus, also create an expression for the classification accuracy:
     test_acc = T.mean(T.eq(T.argmax(test_prediction, axis=1), target_var),
                       dtype=theano.config.floatX)
