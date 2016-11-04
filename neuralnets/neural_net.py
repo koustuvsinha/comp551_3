@@ -5,23 +5,20 @@ from PIL import Image
 """
     function to load the given training set of data.
         num_of_examples - number of total data samples available in the data set.
-
         :returns - an object consisting of all the training data read from file
 """
 
 
 def load_train_set(num_of_examples):
-    x = np.fromfile('../../Dataset/train_x.bin', dtype='uint8')  # load the data from file
+    x = np.fromfile('../Dataset/train_x.bin', dtype='uint8')  # load the data from file
     x = x.reshape((num_of_examples, 60, 60))  # reshape the read data into a manipulative format
     return x
-
 
 
 """
     function to initalize a 2D array of image pixels from the loaded dataset
         data - the loaded data object of all training data
         total_no_images - total number of images in the loaded data object
-
         :returns - a 2D array with image pixel imformation in a flattened vector
 """
 
@@ -37,23 +34,21 @@ def load_images_to_array(data, total_no_images):
     return Xt
 
 
-
 """
     function that loads the output labels of the given data set from file
-
         :returns - the output labels of the given data set loaded as a flat array.
 """
 
 
 def load_output_labels():
     y_list = []
-    with open('../../Dataset/train_y.csv', newline='') as csvReader:  # Reads the given csv
+    with open('../Dataset/train_y.csv', newline='') as csvReader:  # Reads the given csv
         train_y = csv.reader(csvReader)
         for output in train_y:
             if not output[1] == 'Prediction':  # skip the first header row in the dataset
                 y_list.append(output[1])
 
-    y_list = np.asarray(y_list)    # convert loaded output labels into an array
+    y_list = np.asarray(y_list)  # convert loaded output labels into an array
     return y_list
 
 
@@ -62,19 +57,18 @@ def load_output_labels():
     and identity covariance matrix
         X           - 2D array of all training images with image-pixel data per row
         dimensions  - the no of dimensions to which the data is to be reduced
-
         :returns    - a 2D array of training data with PCA transformation and whitening.
 """
 
 
 def preprocess_images(X, dimensions):
-    X -= np.mean(X, axis=0)             # Mean subtraction to center the data around the same origin
+    X -= np.mean(X, axis=0)  # Mean subtraction to center the data around the same origin
     # PCA to reduce the total number of dimensions to only the most contributing ones
-    cov = np.dot(X.T, X) / X.shape[0]   # get the covariance matrix of X
-    U, S, V = np.linalg.svd(cov)        # S,V,D factorization of the covariance matrix (U - eigenvectors)
-    Xrot = np.dot(X, U)                 # decorrelate the data by projecting the original data into its eigenbasis
+    cov = np.dot(X.T, X) / X.shape[0]  # get the covariance matrix of X
+    U, S, V = np.linalg.svd(cov)  # S,V,D factorization of the covariance matrix (U - eigenvectors)
+    Xrot = np.dot(X, U)  # decorrelate the data by projecting the original data into its eigenbasis
 
-    Xrot_reduced = np.dot(Xrot, U[:, :dimensions])      # dimensionality reduction
+    Xrot_reduced = np.dot(Xrot, U[:, :dimensions])  # dimensionality reduction
     S_reduced = S[:dimensions]
 
     # do whitening on the data: divide by the eigenvalues (which are square roots of the singular values)
@@ -93,7 +87,6 @@ def preprocess_images(X, dimensions):
         reg         - the regularization strength of the model
         dim         - no of available dimensions per image
         iterations  - no of iterations to do learning and back-porpagation
-
         :returns
             lost_list         - the list of the "loss" per iteration
             best_param_list   - the params width he least loss value over all iterations
@@ -138,7 +131,7 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
         loss = data_loss + reg_loss
 
         lost_list.append(loss)
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print("iteration %d: loss %f" % (i, loss))
 
         if loss < best_param_list[0]:
@@ -150,7 +143,7 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
             best_param_list[5] = W3
             best_param_list[6] = b3
 
-        #   compute the gradient on scores
+        # compute the gradient on scores
         dscores = probs
         dscores[range(num_examples), y] -= 1
         dscores /= num_examples
@@ -192,7 +185,6 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
     return lost_list, best_param_list, final_params
 
 
-
 """
     function to train a Neural Network of a single hidden layer.
         X           - train data after all pre-processing is done
@@ -203,7 +195,6 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
         reg         - the regularization strength of the model
         dim         - no of available dimensions per image
         iterations  - no of iterations to do learning and back-porpagation
-
         :returns
             lost_list         - the list of the "loss" per iteration
             best_param_list   - the params width he least loss value over all iterations
@@ -243,7 +234,7 @@ def one_hiddenLayer_NN(X, y, h, outs, step_size, reg, dim, iterations):
         loss = data_loss + reg_loss
 
         lost_list.append(loss)
-        if i % 100 == 0:
+        if i % 1000 == 0:
             print("iteration %d: loss %f" % (i, loss))
 
         if loss < best_param_list[0]:
@@ -290,12 +281,11 @@ def one_hiddenLayer_NN(X, y, h, outs, step_size, reg, dim, iterations):
         y                   - the output labels of the data used for training
         no_hidden_layers    - which training NN model was used (one with 2 hidden layers or 1)
         final_params        - the final learned parameters of the model (Weights + biases)
-
         :returns            - the train accuracy of the model
 """
 
 
-def get_train_accuracy(X, y, no_hidden_layers, final_params):
+def get_accuracy(X, y, no_hidden_layers, final_params):
     # get the final learned model parameters to validate accuracy and
     # checking training accuracy
     if no_hidden_layers == 1:
@@ -322,45 +312,110 @@ def get_train_accuracy(X, y, no_hidden_layers, final_params):
         predicted_class = np.argmax(scores, axis=1)
 
     else:
-        print ("No of hidden_layers should be either 1 or 2")
+        print("No of hidden_layers should be either 1 or 2")
         return None
     return (np.mean(predicted_class == y))
+
+
+"""
+    function that splits the given dataset into K-folds for cross validation.
+        X                - the entire input set
+        y                - all the output labels per each input sample
+        dims             - no of dimensions per sample to be considered when doing PCA
+        iter_per_fold    - iterations per fold in K-fold cross validation
+        K                - number of folds to be considered in cross-validation
+        :returns         - a list of parameter and output information of each fold
+"""
+
+
+def K_fold_crossV(X_full, y_full, dims, iter_per_fold, K):
+    fold_info = []
+    data_per_fold = int(X_full.shape[0] / K)
+
+    for fold in range(0, K):
+        print("Training on fold - ", fold + 1)
+        strt_idx = fold * data_per_fold
+        end_idx = strt_idx + data_per_fold
+
+        X_lft_out = X_full[strt_idx:end_idx, ]
+        y_lft_out = y_full[strt_idx:end_idx, ]
+
+        if (strt_idx == 0):
+            X = X_full[end_idx:, ]
+            y = y_full[end_idx:, ]
+        else:
+            X = X_full[0:strt_idx, ]
+            X_2 = X_full[end_idx:, ]
+            X = np.concatenate((X, X_2), axis=0)
+
+            y = y_full[0:strt_idx, ]
+            y_2 = y_full[end_idx:, ]
+            y = np.concatenate((y, y_2), axis=0)
+
+        # PCA reduction and whitening of the images
+        X = preprocess_images(X, dims)
+
+        loss, best_params, final_params = two_hiddenLayer_NN(X, y, 50, 50, 19, 1e-0, 1e-3, dims, iter_per_fold)
+        print('Final train loss: %.2f' % final_params[0])
+
+        train_accuracy = get_accuracy(X, y, 2, final_params)
+        print('Training accuracy: %.2f' % train_accuracy)
+
+        # PCA reduction and whitening of the images of the test set
+        X_lft_out = preprocess_images(X_lft_out, dims)
+
+        test_accuracy = get_accuracy(X_lft_out, y_lft_out, 2, final_params)
+        print('Testing accuracy: %.2f' % test_accuracy)
+
+        newInfo = []
+        newInfo.append(fold)
+        newInfo.append(loss)
+        newInfo.append(train_accuracy)
+        newInfo.append(test_accuracy)
+        newInfo.append(final_params)
+        newInfo.append(best_params)
+
+        fold_info.append(newInfo)
+        print("---------------------------------------")
+
+    return fold_info
 
 
 """
     Main execution of the code base
 """
 
-
 if __name__ == '__main__':
-    num_of_imgs = 100000    # total number of images in the train_data
-    no_of_eggs = 50000      # total number of images to use for training the NN
-    dims = 500              # define the number of dimensions out of the total 3600 to consider in training
-    outs = 19               # no of output nodes in the NN
+    num_of_imgs = 100000  # total number of images in the train_data
+    no_of_eggs = 75000  # total number of images to use for training the NN
+    dims = 500  # define the number of dimensions out of the total 3600 to consider in training
+    outs = 19  # no of output nodes in the NN
+    iterations = 10000
 
-    x = load_train_set(num_of_imgs)             # load the dataset
-    Xt = load_images_to_array(x, num_of_imgs)   # load image pixels into array
+    x = load_train_set(num_of_imgs)  # load the dataset
+    Xt = load_images_to_array(x, num_of_imgs)  # load image pixels into array
 
-    X = Xt.T                    # Xt - [3600 x 100000] transpose it to have image pixel data per row
-    X = X[:no_of_eggs, :]       # separate only the no of images to be considered for training
+    X = Xt.T  # Xt - [3600 x 100000] transpose it to have image pixel data per row
+    # X = X[:no_of_eggs, :]       # separate only the no of images to be considered for training
 
     y_list = load_output_labels()  # load the output labels
-    y = np.zeros(no_of_eggs, dtype='uint8')
+    y = np.zeros(num_of_imgs, dtype='uint8')
     # separate only the output labels of the images considered for training
     for item in range(0, len(y)):
         y[item] = y_list[item]
 
+    # do cross-validation training on K folds of the entire training set.
+    folds_info = K_fold_crossV(X, y, dims, iterations, 5)
+    
     # PCA reduction and whitening of the images
-    X = preprocess_images(X, dims)
+    # X = preprocess_images(X, dims)
 
     # train the data to get the NN model
     # 2 Hidden layer NN
-    loss, best_params, final_params = two_hiddenLayer_NN(X, y, 100, 100, 19, 1e-0 , 1e-3, dims, 20000)
+    # loss, best_params, final_params = two_hiddenLayer_NN(X, y, 50, 50, 19, 1e-0 , 1e-3, dims, 20000)
 
     # 1 Hidden layer NN
     # loss, best_params, final_params = one_hiddenLayer_NN(X, y, 100, 19, 1e-0 , 1e-3, dims, 20000)
 
-    train_accuracy = get_train_accuracy(X, y, 2, final_params)
-    print('Training accuracy: %.2f' % train_accuracy)
-
-
+    # train_accuracy = get_accuracy(X, y, 2, final_params)
+    # print('Training accuracy: %.2f' % train_accuracy)
