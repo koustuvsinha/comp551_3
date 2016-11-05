@@ -5,10 +5,12 @@ import sklearn as sk
 from sklearn.metrics import classification_report
 from sklearn.linear_model import LogisticRegressionCV
 import argparse
+import pickle
 
 def main():   
     num_of_imgs = 100000  # total number of images in the train_data
     no_of_eggs = 1000
+    no_of_test= 1000
     dims = 500
     
     x = load_train_set(num_of_imgs)  # load the dataset
@@ -28,24 +30,26 @@ def main():
     for item in range(0, len(y)):
         y[item] = y_list[item]
 
-    y = y[:no_of_eggs]
+    y_train = y[:no_of_eggs]
 
     print "loaded and sliced y"
     
     logreg = LogisticRegressionCV(cv=10,solver='sag',n_jobs=-1,verbose=1,multi_class='multinomial')
-    logreg.fit(X, y)
+    logreg.fit(X, y_train)
 
-    pickle.dump(logreg, open("logreg.p", "wb"))
+    pickle.dump(logreg, open("logreg_1000.p", "wb"))
     
     x_test = load_test_set(num_of_imgs)  # load the dataset
     Xt = load_images_to_array(x_test, num_of_imgs)  # load image pixels into array
 
     X_test = Xt.T  # Xt - [3600 x 100000] transpose it to have image pixel data per row
-    X_test = X_test[:no_of_eggs, :]       # separate only the no of images to be considered for training
+    X_test = X_test[no_of_eggs:no_of_test, :]       # separate only the no of images to be considered for training
 
     X_test = preprocess_images(X_test, dims)
+    y_test = y[no_of_eggs:no_of_test]
 
-    
+    score(X_test, y_test)
+        
     # train the data to get the NN model
     # 2 Hidden layer NN
     # loss, best_params, final_params = two_hiddenLayer_NN(X, y, 50, 50, 19, 1e-0 , 1e-3, dims, 20000)
