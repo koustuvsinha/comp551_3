@@ -17,12 +17,12 @@ def main():
     Xt = load_images_to_array(x, num_of_imgs)  # load image pixels into array
 
     X = Xt.T  # Xt - [3600 x 100000] transpose it to have image pixel data per row
-    X = X[:no_of_eggs, :]       # separate only the no of images to be considered for training
+    X_train = X[:no_of_eggs, :]       # separate only the no of images to be considered for training
 
-    print "loaded and sliced data"
-    X = preprocess_images(X, dims)
+    ## print "loaded and sliced data"
+    ## X = preprocess_images(X, dims)
 
-    print "preprocessed images"
+    ## print "preprocessed images"
     
     y_list = load_output_labels()  # load the output labels
     y = np.zeros(num_of_imgs, dtype='uint8')
@@ -30,35 +30,25 @@ def main():
     for item in range(0, len(y)):
         y[item] = y_list[item]
 
-    y_train = y[:no_of_eggs]
+    ## y_train = y[:no_of_eggs]
 
-    print "loaded and sliced y"
+    ## print "loaded and sliced y"
     
-    logreg = LogisticRegressionCV(cv=10,solver='sag',n_jobs=-1,verbose=1,multi_class='multinomial')
-    logreg.fit(X, y_train)
+    ## logreg = LogisticRegressionCV(cv=10,solver='sag',n_jobs=-1,verbose=1,multi_class='multinomial')
+    ## logreg.fit(X, y)
 
-    pickle.dump(logreg, open("logreg_1000.p", "wb"))
+    ## pickle.dump(logreg, open("logreg_1000.p", "wb"))
+    logreg = pickle.load(open("logreg_1000.p", "rb"))
+    print "loaded"
+
+    test_boundary = no_of_eggs + no_of_test
     
-    x_test = load_test_set(num_of_imgs)  # load the dataset
-    Xt = load_images_to_array(x_test, num_of_imgs)  # load image pixels into array
-
-    X_test = Xt.T  # Xt - [3600 x 100000] transpose it to have image pixel data per row
-    X_test = X_test[no_of_eggs:no_of_test, :]       # separate only the no of images to be considered for training
-
+    X_test = X[no_of_eggs:test_boundary, :]
     X_test = preprocess_images(X_test, dims)
-    y_test = y[no_of_eggs:no_of_test]
-
-    score(X_test, y_test)
-        
-    # train the data to get the NN model
-    # 2 Hidden layer NN
-    # loss, best_params, final_params = two_hiddenLayer_NN(X, y, 50, 50, 19, 1e-0 , 1e-3, dims, 20000)
-
-    # 1 Hidden layer NN
-    # loss, best_params, final_params = one_hiddenLayer_NN(X, y, 100, 19, 1e-0 , 1e-3, dims, 20000)
-
-    # train_accuracy = get_accuracy(X, y, 2, final_params)
-    # print('Training accuracy: %.2f' % train_accuracy)    pass
+    print "preprocessed test"
+    y_test = y[no_of_eggs:test_boundary]
+    pred = logreg.predict(X_test)
+    print classification_report(y_test, pred)
 
 """
     function to load the given training set of data.
@@ -73,8 +63,8 @@ def load_train_set(num_of_examples):
     return x
 
 def load_test_set(num_of_examples):
-    x = np.fromfile('../Dataset/test_x.bin', dtype='uint8')  # load the data from file
-    x = x.reshape((num_of_examples, 60, 60))  # reshape the read data into a manipulative format
+    x = np.fromfile('Dataset/test_x.bin', dtype='uint8')  # load the data from file
+    x = x.reshape((20000, 60, 60))  # reshape the read data into a manipulative format
     return x
 
 
