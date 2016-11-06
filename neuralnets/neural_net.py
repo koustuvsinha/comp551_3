@@ -1,4 +1,5 @@
 import csv
+import math
 import numpy as np
 from PIL import Image
 
@@ -128,7 +129,16 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
         corect_logprobs = -np.log(probs[range(num_examples), y])
         data_loss = np.sum(corect_logprobs) / num_examples
         reg_loss = 0.5 * reg * np.sum(W * W) + 0.5 * reg * np.sum(W2 * W2) + 0.5 * reg * np.sum(W3 * W3)
+
+        # store previous loss; incase of termination condition is reached
+        loss_prev = loss
         loss = data_loss + reg_loss
+
+        # termination condition for the learning. terminate if the loss reaches 'NaN' or 'Infinity'
+        if math.isnan(loss) or loss == float('Inf'):
+            print("Termination Condition for 'Loss' reached at iteration %d" % i)
+            loss = loss_prev
+            break
 
         lost_list.append(loss)
         if i % 1000 == 0:
@@ -173,6 +183,16 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
         dW2 += reg * W2
         dW += reg * W
 
+        # store params from previous iteration before update
+        #       this is done incase the termination condition becomes TRUE after update
+        #       and we exit the learning phase, we need the last best parameters.
+        W_prev = W
+        b_prev = b
+        W2_prev = W2
+        b2_prev = b2
+        W3_prev = W3
+        b3_prev = b3
+
         # perform a parameter update on the weights and the biases
         W += -step_size * dW
         b += -step_size * db
@@ -180,6 +200,25 @@ def two_hiddenLayer_NN(X, y, h, h2, outs, step_size, reg, dim, iterations):
         b2 += -step_size * db2
         W3 += -step_size * dW3
         b3 += -step_size * db3
+
+        # check if termination condition reached upon parameter update
+        #            if so stop learning and store the params of the previous iteration as best parameters.
+        if ( \
+            (W == float('inf')).any() or np.isnan(W).any() or \
+            (b == float('inf')).any() or np.isnan(b).any() or \
+            (W2 == float('inf')).any() or np.isnan(W2).any() or \
+            (b2 == float('inf')).any() or np.isnan(b2).any() or \
+            (W3 == float('inf')).any() or np.isnan(W3).any() or \
+            (b3 == float('inf')).any() or np.isnan(b3).any()
+        ):
+            print("Termination Condition reached at iteration %d" % i)
+            W = W_prev
+            b = b_prev
+            W2 = W2_prev
+            b2 = b2_prev
+            W3 = W3_prev
+            b3 = b3_prev
+            break
 
     final_params = [loss, W, b, W2, b2, W3, b3]
     return lost_list, best_param_list, final_params
@@ -231,7 +270,17 @@ def one_hiddenLayer_NN(X, y, h, outs, step_size, reg, dim, iterations):
         corect_logprobs = -np.log(probs[range(num_examples), y])
         data_loss = np.sum(corect_logprobs) / num_examples
         reg_loss = 0.5 * reg * np.sum(W * W) + 0.5 * reg * np.sum(W2 * W2)
+
+        # store previous loss; incase of termination condition is reached
+        loss_prev = loss
         loss = data_loss + reg_loss
+
+        # termination condition for the learning.
+        # terminate if the loss reaches 'NaN' or 'Infinity'
+        if math.isnan(loss) or loss == float('Inf'):
+            print("Termination Condition for 'Loss' reached at iteration %d" % i)
+            loss = loss_prev
+            break
 
         lost_list.append(loss)
         if i % 1000 == 0:
@@ -265,11 +314,34 @@ def one_hiddenLayer_NN(X, y, h, outs, step_size, reg, dim, iterations):
         dW2 += reg * W2
         dW += reg * W
 
+        # store params from previous iteration before update
+        #       this is done incase the termination condition becomes TRUE after update
+        #       and we exit the learning phase, we need the last best parameters.
+        W_prev = W
+        b_prev = b
+        W2_prev = W2
+        b2_prev = b2
+
         # perform a parameter update
         W += -step_size * dW
         b += -step_size * db
         W2 += -step_size * dW2
         b2 += -step_size * db2
+
+        # check if termination condition reached upon parameter update
+        #            if so stop learning and store the params of the previous iteration as best parameters.
+        if ( \
+                (W == float('inf')).any() or np.isnan(W).any() or \
+                (b == float('inf')).any() or np.isnan(b).any() or \
+                (W2 == float('inf')).any() or np.isnan(W2).any() or \
+                (b2 == float('inf')).any() or np.isnan(b2).any() \
+            ):
+            print("Termination Condition reached at iteration %d" % i)
+            W = W_prev
+            b = b_prev
+            W2 = W2_prev
+            b2 = b2_prev
+            break
 
     final_params = [loss, W, b, W2, b2]
     return lost_list, best_param_list, final_params
@@ -355,16 +427,23 @@ def K_fold_crossV(X_full, y_full, dims, iter_per_fold, K):
         # PCA reduction and whitening of the images
         X = preprocess_images(X, dims)
 
+        # 2 Hidden layer NN
         loss, best_params, final_params = two_hiddenLayer_NN(X, y, 50, 50, 19, 1e-0, 1e-3, dims, iter_per_fold)
         print('Final train loss: %.2f' % final_params[0])
 
+        # 1 Hidden layer NN
+        # loss, best_params, final_params = one_hiddenLayer_NN(X, y, 5, 19, 1e-0 , 1e-3, dims, iter_per_fold)
+        # print('Final train loss: %.2f' % final_params[0])
+
         train_accuracy = get_accuracy(X, y, 2, final_params)
+        # train_accuracy = get_accuracy(X, y, 1, final_params)
         print('Training accuracy: %.2f' % train_accuracy)
 
         # PCA reduction and whitening of the images of the test set
         X_lft_out = preprocess_images(X_lft_out, dims)
 
         test_accuracy = get_accuracy(X_lft_out, y_lft_out, 2, final_params)
+        # test_accuracy = get_accuracy(X_lft_out, y_lft_out, 1, final_params)
         print('Testing accuracy: %.2f' % test_accuracy)
 
         newInfo = []
@@ -404,11 +483,10 @@ if __name__ == '__main__':
     for item in range(0, len(y)):
         y[item] = y_list[item]
 
-    # do cross-validation training on K folds of the entire training set.
-    folds_info = K_fold_crossV(X, y, dims, iterations, 5)
-    
     # PCA reduction and whitening of the images
     # X = preprocess_images(X, dims)
+
+    folds_info = K_fold_crossV(X, y, dims, iterations, 5)
 
     # train the data to get the NN model
     # 2 Hidden layer NN
